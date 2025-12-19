@@ -1,7 +1,7 @@
 {
   "name": "verdaccio-better-static-token",
   "version": "1.0.0",
-  "description": "An amazing verdaccio plugin",
+  "description": "This plugin for Verdaccio npm registry let you to use custom authentication tokens with verdaccio.",
   "main": "lib/src/index.js",
   "types": "lib/src/index.d.ts",
   "engines": {
@@ -25,7 +25,10 @@
   },
   "keywords": ["verdaccio-"],
   "license": "MIT",
-  "repository": "loc4atnt/better-static-token",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/loc4atnt/verdaccio-better-static-token"
+  },
   "author": "loc4atnt <huynhducnham@gmail.com>",
   "scripts": {
     "build": "tsc",

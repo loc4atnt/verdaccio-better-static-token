@@ -44,6 +44,15 @@ echo '//localhost:4873/:_authToken="mySecureToken"' >> `npm config get userconfi
 ```
 The pattern of the string appended is: `//<url of the registry>/:_authToken="<static-token>"`
 
-## Reference
+## Verdaccio plugin not-found error fixing
+When you install verdaccio globally, sometimes, you face with issue that a community verdaccio plugin is not found after installing.
+
+The reason is that: The verdaccio only loads plugin installed in `<global node_modules directory>/verdaccio/node_modules/`
+
+Therefore, you need to install this plugin (or any community plugin) in somewhere calling `$W`, then copy the plugin package in `$W/node_modules` to `<global node_modules directory>/verdaccio/node_modules/`
+
+For example: at some directory where you have installed verdaccio-better-static-token in it, execute the command `cp ./node_modules/verdaccio-better-static-token <global node_modules directory>/verdaccio/node_modules/verdaccio-better-static-token`
+
+## References
 1. https://github.com/Eomm/verdaccio-static-token
 2. https://github.com/wunderwerkio/verdaccio-static-access-token-middleware-plugin

@@ -1,6 +1,6 @@
 {
   "name": "verdaccio-better-static-token",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "This plugin for Verdaccio npm registry let you to use custom authentication tokens with verdaccio.",
   "main": "lib/src/index.js",
   "types": "lib/src/index.d.ts",

@@ -10,6 +10,7 @@ import { createRemoteUser, } from '@verdaccio/config';
 import { getApiToken, TokenEncryption, } from '@verdaccio/auth';
 
 import { CustomConfig, AccessToken, $RequestExtend } from '../types/index';
+import { TokenCache } from './cache';
 
 const PLUGIN_NAME = 'better-static-token';
 
@@ -18,6 +19,7 @@ export default class VerdaccioMiddlewarePlugin implements IPluginMiddleware<Cust
   public foo: string;
   private accessTokens: Map<string, AccessToken>;
   private config: CustomConfig;
+  private tokenCache: TokenCache;
 
   public constructor(config: CustomConfig, options: PluginOptions<CustomConfig>) {
     this.foo = config.foo !== undefined ? config.strict_ssl : true;
@@ -26,6 +28,9 @@ export default class VerdaccioMiddlewarePlugin implements IPluginMiddleware<Cust
 
     // Saves tokens to map.
     this.accessTokens = new Map(config.staticAccessTokens?.map((token) => [token.key, token]) ?? []);
+
+    // Initialize token cache with 1 minute TTL
+    this.tokenCache = new TokenCache(1, 30);
   }
 
   private debug(message: string) {
@@ -46,6 +51,9 @@ export default class VerdaccioMiddlewarePlugin implements IPluginMiddleware<Cust
 
     // Make sure all tokens are secure.
     this.validateTokenSecurity();
+
+    // Start cache cleanup interval
+    this.tokenCache.startCleanup();
 
     this.debug(`Registering plugin with following tokens: ${this.accessTokens}`);
 
@@ -96,10 +104,25 @@ export default class VerdaccioMiddlewarePlugin implements IPluginMiddleware<Cust
       // }
       /////////////////////////////////////////////////////
 
-      // make token
+      // Check cache first
+      const cachedToken = this.tokenCache.get(accessToken.key);
+      if (cachedToken) {
+        this.debug('Using cached token');
+        extendedReq.headers.authorization = `Bearer ${cachedToken}`;
+        return next();
+      }
+
+      // Cache miss, generate new token
       getApiToken(auth, this.config, extendedReq.remote_user, accessToken.pass)
         .then((token) => {
+          if (!token || typeof token !== 'string') {
+            this.debug('Token generation failed: invalid token returned');
+            res.sendStatus(401);
+            return;
+          }
           this.debug('Token generated successfully');
+          // Cache the token
+          this.tokenCache.set(accessToken.key, token);
           extendedReq.headers.authorization = `Bearer ${token}`;
           next();
         })

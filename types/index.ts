@@ -2,9 +2,10 @@ import { Config, Logger, RemoteUser } from '@verdaccio/types';
 import { Request } from 'express';
 
 export interface AccessToken {
-  user: string;
   key: string;
-  readonly?: boolean;
+  user: string;
+  pass: string;
+  groups?: string;
 }
 
 export interface CustomConfig extends Config {

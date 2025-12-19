@@ -1,4 +1,4 @@
-import { Application, json, NextFunction, Request, Response } from 'express';
+import { Application, NextFunction, Request, Response } from 'express';
 import {
   IBasicAuth,
   IPluginMiddleware,
@@ -6,7 +6,8 @@ import {
   Logger,
   PluginOptions,
 } from '@verdaccio/types';
-import { createRemoteUser } from '@verdaccio/config';
+import { createRemoteUser, } from '@verdaccio/config';
+import { getApiToken, TokenEncryption, } from '@verdaccio/auth';
 
 import { CustomConfig, AccessToken, $RequestExtend } from '../types/index';
 
@@ -33,7 +34,7 @@ export default class VerdaccioMiddlewarePlugin implements IPluginMiddleware<Cust
 
   public register_middlewares(
     app: Application,
-    auth: IBasicAuth<CustomConfig>,
+    auth: IBasicAuth<CustomConfig>&TokenEncryption,
     /* eslint @typescript-eslint/no-unused-vars: off */
     _storage: IStorageManager<CustomConfig>
   ): void {
@@ -77,23 +78,35 @@ export default class VerdaccioMiddlewarePlugin implements IPluginMiddleware<Cust
 
       // Add user to request.
       this.debug(`User ${accessToken.user} authenticated via static access token`);
-      extendedReq.remote_user = createRemoteUser(accessToken.user, [accessToken.user]);
+      const userGroups = accessToken.groups?.split(' ').map((group) => group.trim()).filter((group) => group !== '') ?? [];
+      extendedReq.remote_user = createRemoteUser(accessToken.user, [accessToken.user, ...userGroups]);
 
+      /////////////////// DEPRECATED: The accessing is managed by the user group in config ///////////////////
       // If token is readonly, we only add user for GET requests.
-      if (accessToken.readonly && !this.isReadRequest(extendedReq)) {
-        this.debug('Readonly token does not allow manipulative actions!');
+      // if (accessToken.readonly && !this.isReadRequest(extendedReq)) {
+      //   this.debug('Readonly token does not allow manipulative actions!');
 
-        // Attach error.
-        extendedReq.remote_user.error = 'forbidden';
+      //   // Attach error.
+      //   extendedReq.remote_user.error = 'forbidden';
 
-        this.logger.warn(`Write access denied for readonly access token for user ${accessToken.user}`);
+      //   this.logger.warn(`Write access denied for readonly access token for user ${accessToken.user}`);
 
-        res.sendStatus(403);
-        return;
-      }
+      //   res.sendStatus(403);
+      //   return;
+      // }
+      /////////////////////////////////////////////////////
 
-      // Hand over to next middleware.
-      next();
+      // make token
+      getApiToken(auth, this.config, extendedReq.remote_user, accessToken.pass)
+        .then((token) => {
+          this.debug('Token generated successfully');
+          extendedReq.headers.authorization = `Bearer ${token}`;
+          next();
+        })
+        .catch((error) => {
+          this.debug(`Error: ${error}`);
+          res.sendStatus(401);
+        });
     });
   }
 

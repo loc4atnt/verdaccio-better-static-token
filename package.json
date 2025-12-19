@@ -1,6 +1,6 @@
 {
   "name": "verdaccio-better-static-token",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "An amazing verdaccio plugin",
   "main": "lib/src/index.js",
   "types": "lib/src/index.d.ts",

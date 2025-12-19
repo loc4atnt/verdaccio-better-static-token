@@ -1,4 +1,4 @@
-import { Application, NextFunction, Request, Response } from 'express';
+import { Application, json, NextFunction, Request, Response } from 'express';
 import {
   IBasicAuth,
   IPluginMiddleware,
@@ -104,6 +104,8 @@ export default class VerdaccioMiddlewarePlugin implements IPluginMiddleware<Cust
     if (PLUGIN_NAME in this.config.middlewares) {
       return Boolean(this.config.middlewares[PLUGIN_NAME].enabled);
     }
+
+    this.debug(`Plugin ${PLUGIN_NAME} is not enabled in config: ${JSON.stringify(this.config)}`);
 
     this.debug('Middleware not defined! This should never happen!');
 
